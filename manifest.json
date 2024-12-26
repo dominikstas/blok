@@ -1,0 +1,19 @@
+{
+    "manifest_version": 2,
+    "name": "Social Media Blocker",
+    "version": "1.0",
+    "description": "Blokuje dostęp do mediów społecznościowych i wyświetla motywacyjne pytania",
+    "permissions": [
+      "storage",
+      "webRequest",
+      "webRequestBlocking",
+      "<all_urls>"
+    ],
+    "background": {
+      "scripts": ["background.js"],
+      "persistent": true
+    },
+    "options_page": "options.html"
+  }
+  
+  
