@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Website Blocker</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Website Blocker</h1>
+  <label for="site">Block a site:</label>
+  <input type="text" id="site" placeholder="e.g., facebook.com">
+  <button id="addSite">Add</button>
+  <h2>Blocked Sites</h2>
+  <ul id="blockedSites"></ul>
+  <label for="password">Set Password:</label>
+  <input type="password" id="password">
+  <button id="setPassword">Set</button>
+  <script src="popup.js"></script>
+</body>
+</html>
