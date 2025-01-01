@@ -1,22 +1,17 @@
-// content.js
 chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password }) => {
   const currentHostname = window.location.hostname.replace("www.", "");
-  console.log("Current Hostname: ", currentHostname);
-
+  
   if (blockedSites[currentHostname]) {
-    console.log("This site is blocked.");
-    
-    // Add a flag to localStorage to prevent re-blocking after password entry
     if (localStorage.getItem('blockingDisabled')) {
-      console.log("Blocking is disabled for this session");
       return;
     }
 
-    // Wait for the page to load before showing the block
     setTimeout(() => {
-      // Store the original content and state
       const originalHTML = document.documentElement.innerHTML;
       const originalTitle = document.title;
+      
+      // Store the original head content separately
+      const originalHead = document.head.innerHTML;
       
       // Add the blocking banner
       document.body.innerHTML = `
@@ -154,26 +149,34 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
       document.getElementById("submitPassword").addEventListener("click", () => {
         const enteredPassword = document.getElementById("passwordInput").value;
         if (enteredPassword === password) {
-          // Set the flag to prevent re-blocking
           localStorage.setItem('blockingDisabled', 'true');
           
-          // Fade out the blocker
           const blocker = document.getElementById("blocker");
           blocker.style.opacity = "0";
           
-          // Wait for fade out, then restore
           setTimeout(() => {
-            document.documentElement.innerHTML = originalHTML;
+            // Restore HTML in two steps
+            document.head.innerHTML = originalHead;
+            document.body.innerHTML = originalHTML;
             document.title = originalTitle;
             
-            // Restore scripts
-            Array.from(document.getElementsByTagName('script')).forEach(script => {
+            // Reload all scripts
+            const scripts = Array.from(document.getElementsByTagName('script'));
+            scripts.forEach(script => {
               if (script.src) {
                 const newScript = document.createElement('script');
                 newScript.src = script.src;
                 script.parentNode.replaceChild(newScript, script);
+              } else if (script.textContent) {
+                // Also handle inline scripts
+                const newScript = document.createElement('script');
+                newScript.textContent = script.textContent;
+                script.parentNode.replaceChild(newScript, script);
               }
             });
+            
+            // Trigger a DOM content loaded event
+            document.dispatchEvent(new Event('DOMContentLoaded'));
           }, 500);
         } else {
           const input = document.getElementById("passwordInput");
