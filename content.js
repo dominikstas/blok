@@ -2,15 +2,24 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
   const currentHostname = window.location.hostname.replace("www.", "");
   
   if (blockedSites[currentHostname]) {
-    if (localStorage.getItem('blockingDisabled')) {
-      return;
+    // Check if blocking is temporarily disabled and still valid
+    const blockingDisabled = localStorage.getItem('blockingDisabled');
+    const disabledTimestamp = localStorage.getItem('blockingDisabledTimestamp');
+    
+    if (blockingDisabled && disabledTimestamp) {
+      const now = Date.now();
+      if (now - parseInt(disabledTimestamp) < 600000) { // 10 minutes in milliseconds
+        return;
+      } else {
+        // Clear expired temporary access
+        localStorage.removeItem('blockingDisabled');
+        localStorage.removeItem('blockingDisabledTimestamp');
+      }
     }
 
     setTimeout(() => {
       const originalHTML = document.documentElement.innerHTML;
       const originalTitle = document.title;
-      
-      // Store the original head content separately
       const originalHead = document.head.innerHTML;
       
       // Add the blocking banner
@@ -149,18 +158,19 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
       document.getElementById("submitPassword").addEventListener("click", () => {
         const enteredPassword = document.getElementById("passwordInput").value;
         if (enteredPassword === password) {
+          // Set temporary access with timestamp
           localStorage.setItem('blockingDisabled', 'true');
+          localStorage.setItem('blockingDisabledTimestamp', Date.now().toString());
           
           const blocker = document.getElementById("blocker");
           blocker.style.opacity = "0";
           
           setTimeout(() => {
-            // Restore HTML in two steps
             document.head.innerHTML = originalHead;
             document.body.innerHTML = originalHTML;
             document.title = originalTitle;
             
-            // Reload all scripts
+            // Reload scripts
             const scripts = Array.from(document.getElementsByTagName('script'));
             scripts.forEach(script => {
               if (script.src) {
@@ -168,14 +178,12 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
                 newScript.src = script.src;
                 script.parentNode.replaceChild(newScript, script);
               } else if (script.textContent) {
-                // Also handle inline scripts
                 const newScript = document.createElement('script');
                 newScript.textContent = script.textContent;
                 script.parentNode.replaceChild(newScript, script);
               }
             });
             
-            // Trigger a DOM content loaded event
             document.dispatchEvent(new Event('DOMContentLoaded'));
           }, 500);
         } else {
@@ -187,6 +195,7 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
           }, 1500);
         }
       });
+
 
       // Add keyboard shortcuts
       let lastEscPress = 0;
@@ -243,9 +252,4 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
   } else {
     console.log("This site is not blocked.");
   }
-});
-
-// Add a cleanup function to remove the blocking disabled flag when leaving the page
-window.addEventListener('beforeunload', () => {
-  localStorage.removeItem('blockingDisabled');
 });
