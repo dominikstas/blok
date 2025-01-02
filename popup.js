@@ -1,75 +1,162 @@
-document.getElementById("addSite").addEventListener("click", () => {
-  const site = document.getElementById("site").value;
-  
-  if (site) {
-    chrome.storage.sync.get(["blockedSites", "password"], (result) => {
-      // Check if password exists
-      if (!result.password) {
-        alert("Please set a password before blocking sites.");
-        return;
-      }
+document.addEventListener('DOMContentLoaded', () => {
+  const setupContainer = document.getElementById('setupContainer');
+  const mainContainer = document.getElementById('mainContainer');
+  const errorElement = document.getElementById('error');
 
-      // Initialize blockedSites if it doesn't exist
-      const blockedSites = result.blockedSites || {};
-      blockedSites[site] = true;
-      
-      chrome.storage.sync.set({ blockedSites }, () => {
+  // Initialize view state based on password existence
+  function initializeView() {
+    chrome.storage.sync.get(['password'], (result) => {
+      if (result.password) {
+        setupContainer.classList.remove('active');
+        mainContainer.classList.add('active');
         displayBlockedSites();
-        document.getElementById("site").value = ""; // Clear input field
-      });
+      } else {
+        setupContainer.classList.add('active');
+        mainContainer.classList.remove('active');
+      }
     });
   }
-});
 
-document.getElementById("setPassword").addEventListener("click", () => {
-  const password = document.getElementById("password").value;
-  
-  if (!password) {
-    alert("Please enter a valid password.");
-    return;
-  }
+  // Call initialize on load
+  initializeView();
 
-  chrome.storage.sync.set({ password }, () => {
-    alert("Password set successfully!");
-    document.getElementById("password").value = ""; // Clear password field
-  });
-});
-
-function displayBlockedSites() {
-  chrome.storage.sync.get("blockedSites", ({ blockedSites = {} }) => {
-    const blockedSitesList = document.getElementById("blockedSites");
-    blockedSitesList.innerHTML = "";
+  // Set Password
+  document.getElementById('setPassword').addEventListener('click', () => {
+    const password = document.getElementById('password').value;
     
-    Object.keys(blockedSites).forEach(site => {
-      const listItem = document.createElement("li");
-      listItem.textContent = site;
-      
-      // Add remove button
-      const removeButton = document.createElement("button");
-      removeButton.textContent = "Remove";
-      removeButton.onclick = () => removeSite(site);
-      listItem.appendChild(removeButton);
-      
-      blockedSitesList.appendChild(listItem);
-    });
-  });
-}
-
-function removeSite(site) {
-  chrome.storage.sync.get(["blockedSites", "password"], (result) => {
-    if (!result.password) {
-      alert("Please set a password before modifying blocked sites.");
+    if (password.length < 6) {
+      showError('Password must be at least 6 characters long');
       return;
     }
 
-    const blockedSites = result.blockedSites || {};
-    delete blockedSites[site];
-    
-    chrome.storage.sync.set({ blockedSites }, () => {
-      displayBlockedSites();
+    chrome.storage.sync.set({ password }, () => {
+      setupContainer.classList.remove('active');
+      mainContainer.classList.add('active');
+      document.getElementById('password').value = '';
+      hideError();
+      displayBlockedSites(); // Refresh the sites list after setting password
     });
   });
-}
 
-// Initialize the display
-displayBlockedSites();
+  // Add Site
+  document.getElementById('addSite').addEventListener('click', () => {
+    // First check if password exists
+    chrome.storage.sync.get(['password'], (result) => {
+      if (!result.password) {
+        setupContainer.classList.add('active');
+        mainContainer.classList.remove('active');
+        showError('Please set a password first');
+        return;
+      }
+
+      const site = document.getElementById('site').value;
+      
+      if (!site) {
+        showError('Please enter a site to block');
+        return;
+      }
+
+      // Clean the site URL
+      const cleanSite = site.toLowerCase()
+        .replace(/^(https?:\/\/)?(www\.)?/, '')
+        .replace(/\/.*$/, '');
+
+      chrome.storage.sync.get(['blockedSites'], (result) => {
+        const blockedSites = result.blockedSites || {};
+        
+        if (blockedSites[cleanSite]) {
+          showError('This site is already blocked');
+          return;
+        }
+
+        blockedSites[cleanSite] = true;
+        
+        chrome.storage.sync.set({ blockedSites }, () => {
+          displayBlockedSites();
+          document.getElementById('site').value = '';
+          hideError();
+        });
+      });
+    });
+  });
+
+  function displayBlockedSites() {
+    chrome.storage.sync.get(['blockedSites', 'password'], ({ blockedSites = {}, password }) => {
+      // If no password is set, don't display sites
+      if (!password) {
+        return;
+      }
+
+      const blockedSitesList = document.getElementById('blockedSites');
+      blockedSitesList.innerHTML = '';
+      
+      const sites = Object.keys(blockedSites);
+      
+      if (sites.length === 0) {
+        blockedSitesList.innerHTML = `
+          <div class="empty-state">
+            No sites blocked yet
+          </div>
+        `;
+        return;
+      }
+
+      sites.forEach(site => {
+        const siteElement = document.createElement('div');
+        siteElement.className = 'site-item';
+        siteElement.innerHTML = `
+          <span class="site-domain">${site}</span>
+          <button class="remove-btn" data-site="${site}">×</button>
+        `;
+        blockedSitesList.appendChild(siteElement);
+      });
+
+      // Add event listeners to remove buttons
+      document.querySelectorAll('.remove-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const siteToRemove = e.target.dataset.site;
+          removeSite(siteToRemove);
+        });
+      });
+    });
+  }
+
+  function removeSite(site) {
+    chrome.storage.sync.get(['blockedSites', 'password'], ({ blockedSites = {}, password }) => {
+      if (!password) {
+        setupContainer.classList.add('active');
+        mainContainer.classList.remove('active');
+        showError('Please set a password first');
+        return;
+      }
+
+      delete blockedSites[site];
+      chrome.storage.sync.set({ blockedSites }, () => {
+        displayBlockedSites();
+      });
+    });
+  }
+
+  function showError(message) {
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+    errorElement.classList.remove('shake');
+    void errorElement.offsetWidth; // Trigger reflow
+    errorElement.classList.add('shake');
+  }
+
+  function hideError() {
+    errorElement.style.display = 'none';
+  }
+
+  // Add keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      if (setupContainer.classList.contains('active')) {
+        document.getElementById('setPassword').click();
+      } else if (mainContainer.classList.contains('active')) {
+        document.getElementById('addSite').click();
+      }
+    }
+  });
+});
