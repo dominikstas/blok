@@ -1,162 +1,137 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const setupContainer = document.getElementById('setupContainer');
-  const mainContainer = document.getElementById('mainContainer');
-  const errorElement = document.getElementById('error');
+  // DOM Elements
+  const passwordSection = document.getElementById('passwordSection');
+  const blockerSection = document.getElementById('blockerSection');
+  const passwordForm = document.getElementById('passwordForm');
+  const blockedSitesList = document.getElementById('blockedSitesList');
+  const siteForm = document.getElementById('siteForm');
+  const notification = document.getElementById('notification');
 
-  // Initialize view state based on password existence
+  // Initialize the view
   function initializeView() {
     chrome.storage.sync.get(['password'], (result) => {
       if (result.password) {
-        setupContainer.classList.remove('active');
-        mainContainer.classList.add('active');
-        displayBlockedSites();
+        passwordSection.classList.add('hidden');
+        blockerSection.classList.remove('hidden');
+        loadBlockedSites();
       } else {
-        setupContainer.classList.add('active');
-        mainContainer.classList.remove('active');
+        passwordSection.classList.remove('hidden');
+        blockerSection.classList.add('hidden');
       }
     });
   }
 
-  // Call initialize on load
-  initializeView();
-
-  // Set Password
-  document.getElementById('setPassword').addEventListener('click', () => {
-    const password = document.getElementById('password').value;
+  // Handle password submission
+  passwordForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const password = document.getElementById('passwordInput').value;
     
     if (password.length < 6) {
-      showError('Password must be at least 6 characters long');
+      showNotification('Password must be at least 6 characters', 'error');
       return;
     }
 
     chrome.storage.sync.set({ password }, () => {
-      setupContainer.classList.remove('active');
-      mainContainer.classList.add('active');
-      document.getElementById('password').value = '';
-      hideError();
-      displayBlockedSites(); // Refresh the sites list after setting password
+      showNotification('Password saved successfully', 'success');
+      passwordForm.reset();
+      initializeView();
     });
   });
 
-  // Add Site
-  document.getElementById('addSite').addEventListener('click', () => {
-    // First check if password exists
-    chrome.storage.sync.get(['password'], (result) => {
-      if (!result.password) {
-        setupContainer.classList.add('active');
-        mainContainer.classList.remove('active');
-        showError('Please set a password first');
-        return;
-      }
+  // Handle website submission
+  siteForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const siteInput = document.getElementById('siteInput');
+    const site = siteInput.value.trim();
 
-      const site = document.getElementById('site').value;
+    if (!site) {
+      showNotification('Please enter a website', 'error');
+      return;
+    }
+
+    // Clean the URL
+    const cleanSite = site.toLowerCase()
+      .replace(/^(https?:\/\/)?(www\.)?/, '')
+      .replace(/\/.*$/, '');
+
+    chrome.storage.sync.get(['blockedSites'], (result) => {
+      const blockedSites = result.blockedSites || {};
       
-      if (!site) {
-        showError('Please enter a site to block');
+      if (blockedSites[cleanSite]) {
+        showNotification('This website is already blocked', 'error');
         return;
       }
 
-      // Clean the site URL
-      const cleanSite = site.toLowerCase()
-        .replace(/^(https?:\/\/)?(www\.)?/, '')
-        .replace(/\/.*$/, '');
-
-      chrome.storage.sync.get(['blockedSites'], (result) => {
-        const blockedSites = result.blockedSites || {};
-        
-        if (blockedSites[cleanSite]) {
-          showError('This site is already blocked');
-          return;
-        }
-
-        blockedSites[cleanSite] = true;
-        
-        chrome.storage.sync.set({ blockedSites }, () => {
-          displayBlockedSites();
-          document.getElementById('site').value = '';
-          hideError();
-        });
+      blockedSites[cleanSite] = true;
+      chrome.storage.sync.set({ blockedSites }, () => {
+        showNotification('Website blocked successfully', 'success');
+        siteForm.reset();
+        loadBlockedSites();
       });
     });
   });
 
-  function displayBlockedSites() {
-    chrome.storage.sync.get(['blockedSites', 'password'], ({ blockedSites = {}, password }) => {
-      // If no password is set, don't display sites
-      if (!password) {
-        return;
-      }
-
-      const blockedSitesList = document.getElementById('blockedSites');
+  // Load and display blocked sites
+  function loadBlockedSites() {
+    chrome.storage.sync.get(['blockedSites'], (result) => {
+      const blockedSites = result.blockedSites || {};
       blockedSitesList.innerHTML = '';
-      
-      const sites = Object.keys(blockedSites);
-      
-      if (sites.length === 0) {
+
+      if (Object.keys(blockedSites).length === 0) {
         blockedSitesList.innerHTML = `
           <div class="empty-state">
-            No sites blocked yet
+            <p>No websites blocked yet</p>
           </div>
         `;
         return;
       }
 
-      sites.forEach(site => {
+      Object.keys(blockedSites).forEach(site => {
         const siteElement = document.createElement('div');
         siteElement.className = 'site-item';
         siteElement.innerHTML = `
-          <span class="site-domain">${site}</span>
-          <button class="remove-btn" data-site="${site}">×</button>
+          <span>${site}</span>
+          <button class="delete-btn" data-site="${site}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         `;
         blockedSitesList.appendChild(siteElement);
       });
 
-      // Add event listeners to remove buttons
-      document.querySelectorAll('.remove-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-          const siteToRemove = e.target.dataset.site;
-          removeSite(siteToRemove);
+      // Add delete event listeners
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const siteToDelete = e.currentTarget.dataset.site;
+          delete blockedSites[siteToDelete];
+          chrome.storage.sync.set({ blockedSites }, () => {
+            showNotification('Website unblocked', 'success');
+            loadBlockedSites();
+          });
         });
       });
     });
   }
 
-  function removeSite(site) {
-    chrome.storage.sync.get(['blockedSites', 'password'], ({ blockedSites = {}, password }) => {
-      if (!password) {
-        setupContainer.classList.add('active');
-        mainContainer.classList.remove('active');
-        showError('Please set a password first');
-        return;
-      }
-
-      delete blockedSites[site];
-      chrome.storage.sync.set({ blockedSites }, () => {
-        displayBlockedSites();
-      });
-    });
+  // Show notification
+  function showNotification(message, type) {
+    notification.textContent = message;
+    notification.className = `notification ${type}`;
+    notification.classList.remove('hidden');
+    
+    setTimeout(() => {
+      notification.classList.add('hidden');
+    }, 3000);
   }
 
-  function showError(message) {
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
-    errorElement.classList.remove('shake');
-    void errorElement.offsetWidth; // Trigger reflow
-    errorElement.classList.add('shake');
-  }
-
-  function hideError() {
-    errorElement.style.display = 'none';
-  }
-
-  // Add keyboard shortcuts
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      if (setupContainer.classList.contains('active')) {
-        document.getElementById('setPassword').click();
-      } else if (mainContainer.classList.contains('active')) {
-        document.getElementById('addSite').click();
-      }
-    }
+  // Change password button
+  document.getElementById('changePasswordBtn').addEventListener('click', () => {
+    passwordSection.classList.remove('hidden');
+    blockerSection.classList.add('hidden');
   });
+
+  // Initialize the popup
+  initializeView();
 });
