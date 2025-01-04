@@ -24,115 +24,90 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
       
       // Add the blocking banner
       document.body.innerHTML = `
-        <div id="blocker" style="opacity: 0; transition: opacity 0.5s ease;
+        <div id="blocker" style="
+          opacity: 0;
+          transition: opacity 0.5s ease;
           position: fixed;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
-          color: white;
+          background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+          color: #333;
           display: flex;
           align-items: center;
           justify-content: center;
-          flex-direction: column;
-          z-index: 9999;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         ">
           <div style="
-            background: rgba(255, 255, 255, 0.08);
-            padding: 4rem;
-            border-radius: 24px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
-                        0 0 0 1px rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             text-align: center;
-            max-width: 95%;
-            width: 600px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            max-width: 90%;
+            width: 800px;
           ">
-            <div style="
-              width: 120px;
-              height: 120px;
-              background: #2563eb;
-              border-radius: 50%;
-              margin: 0 auto 2.5rem;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              box-shadow: 0 0 30px rgba(37, 99, 235, 0.3);
-            ">
-              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2a10 10 0 0 1 10 10 10 10 0 0 1-10 10A10 10 0 0 1 2 12"/>
-                <path d="M12 8v8"/>
-                <path d="M8 12h8"/>
-              </svg>
-            </div>
-
             <h1 id="mainTitle" style="
-              font-size: 3rem;
-              margin: 0 0 1.5rem 0;
-              font-weight: 700;
-              line-height: 1.3;
-              color: #ffffff;
-              letter-spacing: -0.5px;
+              font-size: 3.5rem;
+              margin: 0 0 2rem 0;
+              color: #ff6b6b;
               opacity: 0;
               transform: translateY(-20px);
               transition: opacity 0.5s ease, transform 0.5s ease;
-            ">Take a Moment to Reflect</h1>
+            ">Time for a Break</h1>
             
-            <p id="reflectionQuestion" style="
-              font-size: 1.5rem;
-              margin: 0 0 2rem 0;
-              color: #b3b3b3;
-              line-height: 1.6;
-              opacity: 0;
-              transform: translateY(20px);
-              transition: opacity 0.5s ease, transform 0.5s ease;
-            ">Is this really where you want to spend your time?</p>
+            <div id="contentBox" style="
+              background: #fff;
+              border-radius: 15px;
+              padding: 2rem;
+              margin-bottom: 2rem;
+              box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            ">
+              <p id="reflectionQuestion" style="
+                font-size: 1.8rem;
+                margin: 0;
+                color: #4a4a4a;
+                line-height: 1.6;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: opacity 0.5s ease, transform 0.5s ease;
+              ">Is this really where you want to spend your time?</p>
+            </div>
             
             <div id="timerDisplay" style="
-              font-size: 2rem;
-              color: #2563eb;
-              margin-bottom: 2.5rem;
-              font-weight: 500;
-            ">Waiting time: 600s</div>
+              font-size: 2.5rem;
+              color: #ff6b6b;
+              margin-bottom: 2rem;
+              font-weight: 700;
+            ">10:00</div>
             
-            <input id="passwordInput" type="password" placeholder="Enter password to continue" style="
-              display: none;
-              width: 100%;
-              padding: 16px 20px;
-              margin: 0 0 1.5rem 0;
-              border: 2px solid rgba(255, 255, 255, 0.1);
-              border-radius: 12px;
-              background: rgba(255, 255, 255, 0.05);
-              color: white;
-              font-size: 1.2rem;
-              transition: all 0.2s ease;
-              outline: none;
-              box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            ">
-            
-            <button id="submitPassword" style="
-              display: none;
-              background: #2563eb;
-              color: white;
-              border: none;
-              padding: 18px 32px;
-              border-radius: 12px;
-              font-size: 1.2rem;
-              font-weight: 500;
-              cursor: pointer;
-              transition: all 0.2s ease;
-              box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-              width: 100%;
-            ">Continue</button>
+            <div id="passwordContainer" style="display: none;">
+              <input id="passwordInput" type="password" placeholder="Enter password to continue" style="
+                width: 100%;
+                padding: 1rem;
+                margin-bottom: 1rem;
+                border: 2px solid #ff6b6b;
+                border-radius: 10px;
+                font-size: 1.2rem;
+                outline: none;
+                transition: all 0.3s ease;
+              ">
+              
+              <button id="submitPassword" style="
+                background: #ff6b6b;
+                color: white;
+                border: none;
+                padding: 1rem 2rem;
+                border-radius: 10px;
+                font-size: 1.2rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                width: 100%;
+              ">Continue</button>
+            </div>
 
-            <p style="
-              font-size: 1rem;
-              margin: 1.5rem 0 0 0;
-              color: #666;
-            ">Press Esc twice or Ctrl+Alt+S to skip timer</p>
           </div>
         </div>
       `;
@@ -176,10 +151,9 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
         timeLeft--;
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
-        timerDisplay.textContent = `Waiting time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
-          timerDisplay.style.display = 'none';
           showPasswordInput();
         }
       }, 1000);
@@ -190,7 +164,35 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
       }, 600000);
 
       // Handle password submission
-      document.getElementById("submitPassword").addEventListener("click", () => {
+      document.getElementById("submitPassword").addEventListener("click", handlePasswordSubmit);
+
+      // Add keyboard shortcuts
+      let lastEscPress = 0;
+      document.addEventListener("keydown", (event) => {
+        if (event.ctrlKey && event.altKey && event.key === "s") {
+          showPasswordInput();
+        }
+        if (event.key === "Escape") {
+          const now = Date.now();
+          if (now - lastEscPress < 500) {
+            showPasswordInput();
+          }
+          lastEscPress = now;
+        }
+        if (event.key === "Enter" && document.getElementById("passwordInput").style.display !== "none") {
+          handlePasswordSubmit();
+        }
+      });
+
+      function showPasswordInput() {
+        clearTimeout(timer);
+        clearInterval(timerInterval);
+        timerDisplay.style.display = 'none';
+        document.getElementById("passwordContainer").style.display = "block";
+        document.getElementById("contentBox").style.display = "none";
+      }
+
+      function handlePasswordSubmit() {
         const enteredPassword = document.getElementById("passwordInput").value;
         if (enteredPassword === password) {
           // Set temporary access with timestamp
@@ -200,35 +202,37 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
           const blocker = document.getElementById("blocker");
           blocker.innerHTML = `
             <div style="
-              background: rgba(255, 255, 255, 0.08);
-              padding: 4rem;
-              border-radius: 24px;
-              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
-                          0 0 0 1px rgba(255, 255, 255, 0.05);
+              background: rgba(255, 255, 255, 0.9);
+              padding: 3rem;
+              border-radius: 20px;
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
               text-align: center;
-              max-width: 95%;
-              width: 600px;
-              backdrop-filter: blur(10px);
-              -webkit-backdrop-filter: blur(10px);
+              max-width: 90%;
+              width: 800px;
             ">
               <h1 style="
-                font-size: 3rem;
-                margin: 0 0 1.5rem 0;
-                font-weight: 700;
-                line-height: 1.3;
-                color: #ffffff;
-                letter-spacing: -0.5px;
-              ">Access Granted</h1>
-              <p style="
-                font-size: 1.5rem;
+                font-size: 3.5rem;
                 margin: 0 0 2rem 0;
-                color: #b3b3b3;
-                line-height: 1.6;
-              ">You have 10 minutes. Use them wisely!</p>
+                color: #4a4a4a;
+              ">Access Granted</h1>
+              <div style="
+                background: #fff;
+                border-radius: 15px;
+                padding: 2rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+              ">
+                <p style="
+                  font-size: 1.8rem;
+                  margin: 0;
+                  color: #4a4a4a;
+                  line-height: 1.6;
+                ">You have 10 minutes. Use them wisely!</p>
+              </div>
               <p style="
                 font-size: 1.2rem;
                 color: #666;
-              ">This page will refresh automatically after 10 minutes.</p>
+              ">Refresh your page.</p>
             </div>
           `;
           
@@ -258,39 +262,12 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
           }, 600000); // 10 minutes
         } else {
           const input = document.getElementById("passwordInput");
-          input.style.borderColor = "#ef4444";
+          input.style.borderColor = "#ff4757";
           input.style.animation = "shake 0.5s";
           setTimeout(() => {
-            input.style.borderColor = "rgba(255, 255, 255, 0.1)";
+            input.style.borderColor = "#ff6b6b";
           }, 1500);
         }
-      });
-
-      // Add keyboard shortcuts
-      let lastEscPress = 0;
-      document.addEventListener("keydown", (event) => {
-        if (event.ctrlKey && event.altKey && event.key === "s") {
-          showPasswordInput();
-        }
-        if (event.key === "Escape") {
-          const now = Date.now();
-          if (now - lastEscPress < 500) {
-            showPasswordInput();
-          }
-          lastEscPress = now;
-        }
-        if (event.key === "Enter" && document.getElementById("passwordInput").style.display !== "none") {
-          document.getElementById("submitPassword").click();
-        }
-      });
-
-      function showPasswordInput() {
-        clearTimeout(timer);
-        clearInterval(timerInterval);
-        timerDisplay.style.display = 'none';
-        document.getElementById("passwordInput").style.display = "block";
-        document.getElementById("submitPassword").style.display = "block";
-        console.log("Timer skipped.");
       }
 
       // Add styles for animations
@@ -303,13 +280,13 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
         }
 
         #passwordInput:focus {
-          border-color: #2563eb !important;
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+          border-color: #ff6b6b;
+          box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
         }
 
         #submitPassword:hover {
-          background: #1d4ed8 !important;
-          transform: translateY(-1px);
+          background: #ff4757;
+          transform: translateY(-2px);
         }
 
         #submitPassword:active {
