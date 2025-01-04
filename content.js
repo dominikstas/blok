@@ -69,28 +69,34 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
               </svg>
             </div>
 
-            <h1 style="
-              font-size: 2.5rem;
+            <h1 id="mainTitle" style="
+              font-size: 3rem;
               margin: 0 0 1.5rem 0;
               font-weight: 700;
               line-height: 1.3;
               color: #ffffff;
               letter-spacing: -0.5px;
-            ">Take a Moment to Pause</h1>
+              opacity: 0;
+              transform: translateY(-20px);
+              transition: opacity 0.5s ease, transform 0.5s ease;
+            ">Take a Moment to Reflect</h1>
             
-            <p style="
-              font-size: 1.3rem;
+            <p id="reflectionQuestion" style="
+              font-size: 1.5rem;
               margin: 0 0 2rem 0;
               color: #b3b3b3;
               line-height: 1.6;
-            ">Is this really where you want to spend your time?<br>Your goals are waiting.</p>
+              opacity: 0;
+              transform: translateY(20px);
+              transition: opacity 0.5s ease, transform 0.5s ease;
+            ">Is this really where you want to spend your time?</p>
             
             <div id="timerDisplay" style="
-              font-size: 1.4rem;
+              font-size: 2rem;
               color: #2563eb;
               margin-bottom: 2.5rem;
               font-weight: 500;
-            ">Waiting time: 60s</div>
+            ">Waiting time: 600s</div>
             
             <input id="passwordInput" type="password" placeholder="Enter password to continue" style="
               display: none;
@@ -134,14 +140,43 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
       // Fade in the blocker
       setTimeout(() => {
         document.getElementById("blocker").style.opacity = "1";
+        document.getElementById("mainTitle").style.opacity = "1";
+        document.getElementById("mainTitle").style.transform = "translateY(0)";
+        document.getElementById("reflectionQuestion").style.opacity = "1";
+        document.getElementById("reflectionQuestion").style.transform = "translateY(0)";
       }, 100);
 
+      // Reflection questions
+      const questions = [
+        "Is this really where you want to spend your time?",
+        "What's your main goal for today?",
+        "How will this site help you achieve that goal?",
+        "Is there a more productive activity you could be doing right now?",
+        "What would your future self thank you for doing instead?"
+      ];
+      let currentQuestion = 0;
+
+      // Rotate questions
+      setInterval(() => {
+        currentQuestion = (currentQuestion + 1) % questions.length;
+        const questionElement = document.getElementById("reflectionQuestion");
+        questionElement.style.opacity = "0";
+        questionElement.style.transform = "translateY(20px)";
+        setTimeout(() => {
+          questionElement.textContent = questions[currentQuestion];
+          questionElement.style.opacity = "1";
+          questionElement.style.transform = "translateY(0)";
+        }, 500);
+      }, 10000);
+
       // Timer countdown
-      let timeLeft = 60;
+      let timeLeft = 600; // 10 minutes
       const timerDisplay = document.getElementById("timerDisplay");
       const timerInterval = setInterval(() => {
         timeLeft--;
-        timerDisplay.textContent = `Waiting time: ${timeLeft}s`;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `Waiting time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
         if (timeLeft <= 0) {
           clearInterval(timerInterval);
           timerDisplay.style.display = 'none';
@@ -149,10 +184,10 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
         }
       }, 1000);
 
-      // Show password input after 1 minute
+      // Show password input after 10 minutes
       const timer = setTimeout(() => {
         showPasswordInput();
-      }, 60000);
+      }, 600000);
 
       // Handle password submission
       document.getElementById("submitPassword").addEventListener("click", () => {
@@ -163,29 +198,64 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
           localStorage.setItem('blockingDisabledTimestamp', Date.now().toString());
           
           const blocker = document.getElementById("blocker");
-          blocker.style.opacity = "0";
+          blocker.innerHTML = `
+            <div style="
+              background: rgba(255, 255, 255, 0.08);
+              padding: 4rem;
+              border-radius: 24px;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2),
+                          0 0 0 1px rgba(255, 255, 255, 0.05);
+              text-align: center;
+              max-width: 95%;
+              width: 600px;
+              backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px);
+            ">
+              <h1 style="
+                font-size: 3rem;
+                margin: 0 0 1.5rem 0;
+                font-weight: 700;
+                line-height: 1.3;
+                color: #ffffff;
+                letter-spacing: -0.5px;
+              ">Access Granted</h1>
+              <p style="
+                font-size: 1.5rem;
+                margin: 0 0 2rem 0;
+                color: #b3b3b3;
+                line-height: 1.6;
+              ">You have 10 minutes. Use them wisely!</p>
+              <p style="
+                font-size: 1.2rem;
+                color: #666;
+              ">This page will refresh automatically after 10 minutes.</p>
+            </div>
+          `;
           
           setTimeout(() => {
-            document.head.innerHTML = originalHead;
-            document.body.innerHTML = originalHTML;
-            document.title = originalTitle;
-            
-            // Reload scripts
-            const scripts = Array.from(document.getElementsByTagName('script'));
-            scripts.forEach(script => {
-              if (script.src) {
-                const newScript = document.createElement('script');
-                newScript.src = script.src;
-                script.parentNode.replaceChild(newScript, script);
-              } else if (script.textContent) {
-                const newScript = document.createElement('script');
-                newScript.textContent = script.textContent;
-                script.parentNode.replaceChild(newScript, script);
-              }
-            });
-            
-            document.dispatchEvent(new Event('DOMContentLoaded'));
-          }, 500);
+            blocker.style.opacity = "0";
+            setTimeout(() => {
+              document.head.innerHTML = originalHead;
+              document.body.innerHTML = originalHTML;
+              document.title = originalTitle;
+              
+              // Reload scripts
+              const scripts = Array.from(document.getElementsByTagName('script'));
+              scripts.forEach(script => {
+                if (script.src) {
+                  const newScript = document.createElement('script');
+                  newScript.src = script.src;
+                  script.parentNode.replaceChild(newScript, script);
+                } else if (script.textContent) {
+                  const newScript = document.createElement('script');
+                  newScript.textContent = script.textContent;
+                  script.parentNode.replaceChild(newScript, script);
+                }
+              });
+              
+              document.dispatchEvent(new Event('DOMContentLoaded'));
+            }, 500);
+          }, 600000); // 10 minutes
         } else {
           const input = document.getElementById("passwordInput");
           input.style.borderColor = "#ef4444";
@@ -195,7 +265,6 @@ chrome.storage.sync.get(["blockedSites", "password"], ({ blockedSites, password 
           }, 1500);
         }
       });
-
 
       // Add keyboard shortcuts
       let lastEscPress = 0;
