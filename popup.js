@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // DOM Elements
+  // Previous DOM Elements
   const passwordSection = document.getElementById('passwordSection');
   const blockerSection = document.getElementById('blockerSection');
   const passwordForm = document.getElementById('passwordForm');
@@ -7,7 +7,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const siteForm = document.getElementById('siteForm');
   const notification = document.getElementById('notification');
 
-  // Initialize the view
+  // Social media preset sites
+  const SOCIAL_MEDIA_SITES = {
+    'facebook.com': true,
+    'twitter.com': true,
+    'youtube.com': true,
+    'instagram.com': true
+  };
+
+  // Handle social media preset button
+  document.getElementById('socialMediaPresetBtn').addEventListener('click', () => {
+    chrome.storage.sync.get(['blockedSites'], (result) => {
+      const blockedSites = result.blockedSites || {};
+      
+      // Add social media sites to blocked sites
+      Object.keys(SOCIAL_MEDIA_SITES).forEach(site => {
+        blockedSites[site] = true;
+      });
+
+      chrome.storage.sync.set({ blockedSites }, () => {
+        showNotification('Social media sites blocked', 'success');
+        loadBlockedSites();
+      });
+    });
+  });
+
+  // Previous functions remain the same
   function initializeView() {
     chrome.storage.sync.get(['password'], (result) => {
       if (result.password) {
